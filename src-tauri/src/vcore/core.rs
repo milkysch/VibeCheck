@@ -29,6 +29,8 @@ use vrcoscquery::OSCQuery;
 
 use tokio::sync::{mpsc::unbounded_channel, mpsc::UnboundedReceiver, mpsc::UnboundedSender};
 
+use crate::toy_handling::handling::TOY_RATE_LIMITER;
+
 pub struct VCStateMutex(pub Arc<Mutex<VibeCheckState>>);
 
 pub struct VibeCheckState {
@@ -609,6 +611,7 @@ pub fn native_get_vibecheck_config(vc_state: tauri::State<'_, VCStateMutex>) -> 
         lc_override: lc_or,
         show_toy_advanced: config.show_toy_advanced,
         show_feature_advanced: config.show_feature_advanced,
+        messages_per_second: config.messages_per_second,
     }
 }
 
@@ -636,6 +639,7 @@ pub fn native_set_vibecheck_config(
         vc_lock.config.desktop_notifications = fe_vc_config.desktop_notifications;
         vc_lock.config.show_toy_advanced = fe_vc_config.show_toy_advanced;
         vc_lock.config.show_feature_advanced = fe_vc_config.show_feature_advanced;
+        vc_lock.config.messages_per_second = fe_vc_config.messages_per_second;
 
         if let Some(host) = fe_vc_config.lc_override {
             // Is valid IPv4?
@@ -667,6 +671,8 @@ pub fn native_set_vibecheck_config(
                 },
             }
         }
+
+        TOY_RATE_LIMITER.update_rate(fe_vc_config.messages_per_second);
 
         vc_lock.config.clone()
     };

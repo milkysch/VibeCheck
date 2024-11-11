@@ -22,6 +22,7 @@ pub struct FeVibeCheckConfig {
     pub lc_override: Option<String>,
     pub show_toy_advanced: bool,
     pub show_feature_advanced: bool,
+    pub messages_per_second: u64
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, TS)]

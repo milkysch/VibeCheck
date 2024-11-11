@@ -5651,6 +5651,7 @@ dependencies = [
  "futures",
  "futures-timer",
  "futures-util",
+ "lazy_static",
  "log",
  "open",
  "parking_lot",

@@ -120,4 +120,8 @@ export const TOOLTIP = {
     text: "Show advanced options for features [vibrator, constrict, oscillate, etc], will show options like idle speed, flip input, simulate",
     link: "",
   },
+  MessagesPerSecond: {
+    text: "How many messages to send to toy per second. Default: 10",
+    link: ""
+  }
 } as const;

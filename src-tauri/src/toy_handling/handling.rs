@@ -44,6 +44,7 @@ use tokio::sync::{
     broadcast::{Receiver as BReceiver, Sender as BSender},
 };
 use tokio::task::JoinHandle;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use super::toyops::ProcessingMode;
 use super::toyops::ProcessingModeValues;
@@ -52,6 +53,46 @@ use super::ModeProcessorInput;
 use super::ModeProcessorInputType;
 use super::RateParser;
 use super::SmoothParser;
+
+pub struct ToyRateLimiter {
+    last_update: AtomicU64,
+    messages_per_second: AtomicU64,
+}
+
+impl ToyRateLimiter {
+    pub fn new(messages_per_second: u64) -> Self {
+        Self {
+            last_update: AtomicU64::new(0),
+            messages_per_second: AtomicU64::new(messages_per_second),
+        }
+    }
+
+    pub fn update_rate(&self, messages_per_second: u64) {
+        self.messages_per_second.store(messages_per_second, Ordering::Relaxed);
+    }
+
+    pub fn can_send(&self) -> bool {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64;
+        
+        let last = self.last_update.load(Ordering::Relaxed);
+        let mps = self.messages_per_second.load(Ordering::Relaxed);
+        let interval_ms = 1000 / mps;
+
+        if now - last >= interval_ms {
+            self.last_update.store(now, Ordering::Relaxed);
+            true
+        } else {
+            false
+        }
+    }
+}
+
+lazy_static::lazy_static! {
+    pub static ref TOY_RATE_LIMITER: ToyRateLimiter = ToyRateLimiter::new(10);
+}
 
 /*
     This handler will handle the adding and removal of toys
@@ -1082,6 +1123,11 @@ pub async fn command_toy(
     flip_float: bool,
     feature_levels: LevelTweaks,
 ) {
+    if !TOY_RATE_LIMITER.can_send() {
+        trace!("Rate limited, skipping command");
+        return;
+    }
+
     match feature_type {
         VCFeatureType::Vibrator => {
             scalar_parse_levels_send_toy_cmd(

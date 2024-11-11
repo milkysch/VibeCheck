@@ -22,7 +22,11 @@ export default function Config({
   const [newConfig, setNewConfig] = useState<FeVibeCheckConfig>(config);
 
   const onChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setNewConfig({ ...newConfig, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setNewConfig((prev) => ({
+      ...prev,
+      [name]: name === "messages_per_second" ? parseInt(value, 10) : value,
+    }));
   };
 
   const onCheckSwitch = (checked: boolean, name: keyof FeVibeCheckConfig) => {
@@ -213,6 +217,28 @@ export default function Config({
               size="small"
             />
             <div />
+            <TooltipLabel
+              text="Messages per second"
+              tooltip={TOOLTIP.MessagesPerSecond}
+            />
+            <div />
+            <input
+              name="messages_per_second"
+              className="rounded-sm px-1 text-zinc-800 outline-none"
+              value={newConfig.messages_per_second}
+              onChange={onChange}
+              type="number"
+              min={1}
+              max={60}
+              onInvalid={(e) =>
+                (e.target as HTMLInputElement).setCustomValidity(
+                  "Enter value between 1-60"
+                )
+              }
+              onInput={(e) =>
+                (e.target as HTMLInputElement).setCustomValidity("")
+              }
+            />
           </div>
         </form>
         <div className="flex justify-around">
